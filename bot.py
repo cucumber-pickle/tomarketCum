@@ -191,6 +191,48 @@ class Tomartod:
 
             self.log(f"{hijau}success {biru}claim{hijau} game point : {putih}{point}")
 
+
+    def evaluate_stars(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/evaluate"
+        res = self.http(url, self.headers, "")
+        if res.status_code != 200:
+            self.log(f"{merah}failed unlock levels!")
+            return False
+        return res.json()
+
+
+
+    def unlocking_levels(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/create"
+        res = self.http(url, self.headers, "")
+        if res.status_code != 200:
+            self.log(f"{merah}failed unlock levels!")
+            return False
+        current_rank = res.json().get('data').get('currentRank').get('name')
+        return current_rank
+
+    def total_rank(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/totalRank"
+        res = self.http(url, self.headers, "")
+        if res.status_code != 200:
+            self.log(f"{merah}failed get rank!")
+            return False
+        total_rank = res.json().get('data')
+        return total_rank
+
+    def rank(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/data"
+        data = json.dumps({"init_data": token, "language_code": "ru"})
+        res = self.http(url, self.headers, data)
+        # print(res.json())
+        if res.status_code != 200:
+            self.log(f"{merah}failed get rank!")
+            return False
+        if res.json().get('data').get('isCreated') == False:
+            return None
+        rank = res.json().get('data').get('currentRank').get('name')
+        return rank
+
     def get_balance(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
         while True:
@@ -206,6 +248,7 @@ class Tomartod:
             timestamp = data["timestamp"]
             balance = data["available_balance"]
             self.log(f"{hijau}balance : {putih}{balance}")
+
             if "daily" not in data.keys():
                 self.daily_claim()
                 continue
@@ -233,6 +276,26 @@ class Tomartod:
 
             self.log(f"{kuning}not time to claim !")
             self.log(f"{kuning}end farming at : {putih}{format_end_farming}")
+
+            # total_rank = self.total_rank()
+            # self.log(f"{hijau}total_rank: {putih}{total_rank}")
+            rank = self.rank(data)
+            self.log(f"{hijau}current_rank: {putih}{rank}")
+
+            if self.unlock_levels and not rank:
+                evaluate_stars = self.evaluate_stars()
+                if evaluate_stars.get('status') == 500:
+                    self.log(f"{hijau}Levels already unlock")
+                if evaluate_stars.get('status') == 0:
+                    self.log(f"{hijau}You have - {putih}{evaluate_stars.get('data').get('stars')} stars")
+                    time.sleep(1)
+                    current_rank = self.unlocking_levels()
+                    if current_rank:
+                        self.log(f"{hijau}Levels unlock, your current_rank - {putih}{current_rank}")
+            else:
+                self.log(f"{hijau}Levels already unlock")
+
+
             if self.complete_task:
                 tasks = self.get_tasks_list(token)
                 if not tasks:
@@ -295,6 +358,7 @@ class Tomartod:
         self.interval = config["interval"]
         self.play_game = config["play_game"]
         self.complete_task = config["complete_task"]
+        self.unlock_levels = config["unlock_levels"]
         self.game_low_point = config["game_point"]["low"]
         self.game_high_point = config["game_point"]["high"]
         self.add_time_min = config["additional_time"]["min"]
