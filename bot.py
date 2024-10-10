@@ -350,10 +350,9 @@ class Tomartod:
                 tickets = int(self.count_tickets(data))
                 self.log(f'{hijau}you have {putih}{tickets} tickets')
                 if tickets > 0:
-                    while tickets != 0:
+                    for i in range(tickets):
                         amount, amount_type = self.raffle()
-                        self.log(f"{hijau}success claim {putih}{amount} {amount_type}")
-                        tickets = tickets - 1
+                        self.log(f"{hijau}success claim {putih}{amount} {amount_type}, {merah} ticket {putih} - {i+1} / {tickets}")
                         time.sleep(3)
 
             if self.complete_task:
