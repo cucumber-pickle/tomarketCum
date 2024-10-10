@@ -495,10 +495,6 @@ class Tomartod:
         | |      | |  | | | |      | |  | | | |\/| | |  _ <  |  __|   |  _  / 
         | |____  | |__| | | |____  | |__| | | |  | | | |_) | | |____  | | \ \ 
          \_____|  \____/   \_____|  \____/  |_|  |_| |____/  |______| |_|  \_\ """
-        print(Fore.GREEN + Style.BRIGHT + banner + Style.RESET_ALL)
-        print(biru + f" Goats Telegram Bot")
-        print(merah + f" FREE TO USE = Join us on {putih}t.me/cucumber_scripts")
-        print(merah + f" before start please '{hijau}git pull{hijau}' to update bot")
 
 
         arg = argparse.ArgumentParser()
@@ -509,6 +505,12 @@ class Tomartod:
         args = arg.parse_args()
         if not args.marinkitagawa:
             os.system("cls" if os.name == "nt" else "clear")
+        print(Fore.GREEN + Style.BRIGHT + banner + Style.RESET_ALL)
+        print()
+        print(biru + f" Tomarket Telegram Bot")
+        print(merah + f" FREE TO USE = Join us on {putih}t.me/cucumber_scripts")
+        print(merah + f" before start please '{hijau}git pull{hijau}' to update bot")
+        print()
         self.load_config(args.config)
         datas = self.load_data(args.data)
         proxies = open(args.proxy).read().splitlines()
