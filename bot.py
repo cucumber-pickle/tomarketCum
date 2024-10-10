@@ -224,14 +224,37 @@ class Tomartod:
         url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/data"
         data = json.dumps({"init_data": token, "language_code": "ru"})
         res = self.http(url, self.headers, data)
-        # print(res.json())
         if res.status_code != 200:
             self.log(f"{merah}failed get rank!")
             return False
         if res.json().get('data').get('isCreated') == False:
             return None
         rank = res.json().get('data').get('currentRank').get('name')
-        return rank
+        unusedStars = res.json().get('data').get('unusedStars')
+        usedStars = res.json().get('data').get('usedStars')
+        return rank, unusedStars, usedStars
+
+    def count_tickets(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/user/tickets"
+        data = json.dumps({"init_data": token, "language_code": "ru"})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed get tickets!")
+            return False
+        tickets = res.json().get('data').get('ticket_spin_1')
+        return tickets
+
+    def raffle(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/spin/raffle"
+        data = json.dumps({"category": "ticket_spin_1"})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed raffle!")
+            return False
+
+        amount = res.json().get('data').get('results')[0].get('amount')
+        amount_type = res.json().get('data').get('results')[0].get('type')
+        return amount, amount_type
 
     def get_balance(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
@@ -279,9 +302,9 @@ class Tomartod:
 
             # total_rank = self.total_rank()
             # self.log(f"{hijau}total_rank: {putih}{total_rank}")
-            rank = self.rank(data)
+            rank, unused_stars, used_stars = self.rank(data)
             self.log(f"{hijau}current_rank: {putih}{rank}")
-
+            self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
             if self.unlock_levels and not rank:
                 evaluate_stars = self.evaluate_stars()
                 if evaluate_stars.get('status') == 500:
@@ -295,6 +318,15 @@ class Tomartod:
             else:
                 self.log(f"{hijau}Levels already unlock")
 
+            if self.use_free_spin:
+                tickets = int(self.count_tickets(data))
+                self.log(f'{hijau}you have {putih}{tickets} tickets')
+                if tickets > 0:
+                    while tickets != 0:
+                        amount, amount_type = self.raffle()
+                        self.log(f"{hijau}success claim {putih}{amount} {amount_type}")
+                        tickets = tickets - 1
+                        time.sleep(3)
 
             if self.complete_task:
                 tasks = self.get_tasks_list(token)
@@ -358,6 +390,7 @@ class Tomartod:
         self.interval = config["interval"]
         self.play_game = config["play_game"]
         self.complete_task = config["complete_task"]
+        self.use_free_spin = config["use_free_spin"]
         self.unlock_levels = config["unlock_levels"]
         self.game_low_point = config["game_point"]["low"]
         self.game_high_point = config["game_point"]["high"]

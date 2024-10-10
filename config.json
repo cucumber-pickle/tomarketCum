@@ -2,6 +2,7 @@
     "interval": 1,
     "play_game": false,
     "complete_task": false,
+    "use_free_spin": true,
     "unlock_levels": true,
     "game_point": {
         "low": 100,
