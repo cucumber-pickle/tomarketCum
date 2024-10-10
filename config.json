@@ -1,6 +1,7 @@
 {
     "interval": 1,
-    "play_game": true,
+    "play_game": false,
+    "complete_task": true,
     "game_point": {
         "low": 100,
         "high": 150

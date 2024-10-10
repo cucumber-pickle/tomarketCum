@@ -146,10 +146,8 @@ class Tomartod:
         data = json.dumps({"init_data": token, "task_id": task_id})
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
-            self.log(f"{merah}failed complete_task!")
+            self.log(f"{merah}failed start_task!")
             return False
-        result = res.json().get("data")
-        time.sleep(1)
         return res
 
     def check_task(self,token, task_id):
@@ -157,24 +155,18 @@ class Tomartod:
         data = json.dumps({"init_data": token, "task_id": task_id})
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
-            self.log(f"{merah}failed complete_task!")
+            self.log(f"{merah}failed check_task!")
             return False
-        result = res.json().get("data")
-        time.sleep(1)
-        return res
+        return res.json()
 
-    def complete_task(self, task_id):
+    def claim_task(self, task_id):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/claim"
         data = json.dumps({"task_id": task_id})
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
-            self.log(f"{merah}failed complete_task!")
+            self.log(f"{merah}failed claim_task!")
             return False
-        result = res.json().get("data")
-        print(f'5 -  {res.json()}')
-        print(f'6 -  {result}')
-        time.sleep(1)
-        return res
+        return res.json()
 
     def play_game_func(self, amount_pass):
         data_game = json.dumps({"game_id": "59bcd12e-04e2-404c-a172-311a0084587d"})
@@ -241,30 +233,41 @@ class Tomartod:
 
             self.log(f"{kuning}not time to claim !")
             self.log(f"{kuning}end farming at : {putih}{format_end_farming}")
-            tasks = self.get_tasks_list(token)
-            if not tasks:
-                print("No tasks found in the 'data' field.")
-                return
-            for category, task_list in tasks.items():
-                if isinstance(task_list, list):
-                    for task in task_list:
-                        task_id = task.get('taskId')
-                        task_name = task.get('name')
-                        print(f"Completing {task_name}?")
-                        try:
-                            completion_response = self.start_task(token, task_id)
-                            time.sleep(2)
+            if self.complete_task:
+                tasks = self.get_tasks_list(token)
+                if not tasks:
+                    self.log("No tasks found in the 'data' field.")
+                    return
 
+                for category, task_list in tasks.items():
+                    if isinstance(task_list, list):
+                        for task in task_list:
+                            task_id = task.get('taskId')
+                            task_name = task.get('name')
+                            self.log(kuning + f"Completing {task_name}, id{task_id}?")
+                            try:
+                                check = self.check_task(token, task_id).get('data').get('status')
+                                if check ==2 or check ==3:
+                                    self.log(putih + f'task already completed!')
+                                    continue
 
-                            completion_response = self.check_task(token, task_id)
-                            time.sleep(2)
+                                self.log(biru + f'Task not done. Start {task_name}')
+                                completion_response = self.start_task(token, task_id)
+                                time.sleep(1)
 
-                            completion_response = self.complete_task(task_id)
-                        except http.client.RemoteDisconnected as e:
-                            print(f"RemoteDisconnected error occurred: {e}. Moving to next account.")
-                            return  # Exit the current account's task processing
-            else:
-                print(f"All tasks done")
+                                self.log(kuning + f'try claim {task_name}')
+                                claim = self.claim_task(task_id)
+                                if claim.get('status') == 500:
+                                    self.log(merah + f"Can't claim task - {putih}{claim.get('message')}")
+                                if claim.get('status') == 0:
+                                    self.log(hijau + f'task done!')
+                                time.sleep(1)
+
+                            except http.client.RemoteDisconnected as e:
+                                print(f"RemoteDisconnected error occurred: {e}. Moving to next account.")
+                                return  # Exit the current account's task processing
+                else:
+                    self.log(hijau + f"All possible tasks  been completed")
 
             if self.play_game:
                 self.log(f"{hijau}auto play game is enable !")
@@ -291,6 +294,7 @@ class Tomartod:
         config = json.loads(open(file).read())
         self.interval = config["interval"]
         self.play_game = config["play_game"]
+        self.complete_task = config["complete_task"]
         self.game_low_point = config["game_point"]["low"]
         self.game_high_point = config["game_point"]["high"]
         self.add_time_min = config["additional_time"]["min"]
