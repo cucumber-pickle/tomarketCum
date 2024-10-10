@@ -347,9 +347,10 @@ class Tomartod:
                     current_lvl = result_up.get('data').get('currentRank').get('level')
                     self.log(f"{hijau}Lvl ugrade, your current_rank - {putih}{current_rank}, {current_lvl} lvl")
                     time.sleep(1)
-                    share_tg = self.sharetg()
-                    if share_tg == "ok":
-                        self.log(f"{hijau}success share tg. Reward: {putih} 2000!")
+                    if self.share_tg_after_upgrade:
+                        share_tg = self.sharetg()
+                        if share_tg == "ok":
+                            self.log(f"{hijau}success share tg. Reward: {putih} 2000!")
 
             if self.use_free_spin:
                 tickets = int(self.count_tickets(data))
@@ -425,6 +426,7 @@ class Tomartod:
         self.complete_task = config["complete_task"]
         self.use_free_spin = config["use_free_spin"]
         self.unlock_levels = config["unlock_levels"]
+        self.share_tg_after_upgrade = config["share_tg_after_upgrade"]
         self.upgrade_max_level = config["upgrade_max_level"]
         self.game_low_point = config["game_point"]["low"]
         self.game_high_point = config["game_point"]["high"]
