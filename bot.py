@@ -9,6 +9,7 @@ from base64 import b64decode, urlsafe_b64decode
 from datetime import datetime
 from urllib.parse import parse_qs
 from colorama import init, Fore, Style
+import http
 
 merah = Fore.LIGHTRED_EX
 kuning = Fore.LIGHTYELLOW_EX
@@ -66,7 +67,7 @@ class Tomartod:
             self.log(f"{merah}failed fetch token authorization, check http.log !")
             now = datetime.now().strftime("%Y-%m-%d %H:%M")
             open("http.log", "a", encoding="utf-8").write(
-                f"{now} / {acc} / {un} / res != 200\n")
+                f"{now} / {acc} / {un} / res !200\n")
             return None
         data = res.json().get("data")
         token = data.get("access_token")
@@ -129,6 +130,51 @@ class Tomartod:
             f"{hijau}success claim {biru}daily sign {hijau}reward : {putih}{poin} !"
         )
         return
+    def get_tasks_list(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/list"
+        data = json.dumps({"init_data": token, "language_code":"ru"})
+        res = self.http(url, self.headers, data)
+        tasks = res.json().get("data")
+
+        if res.status_code != 200:
+            self.log(f"{merah}failed get_tasks_lis")
+            return False
+        return tasks
+
+    def start_task(self,token, task_id):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/start"
+        data = json.dumps({"init_data": token, "task_id": task_id})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed complete_task!")
+            return False
+        result = res.json().get("data")
+        time.sleep(1)
+        return res
+
+    def check_task(self,token, task_id):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/check"
+        data = json.dumps({"init_data": token, "task_id": task_id})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed complete_task!")
+            return False
+        result = res.json().get("data")
+        time.sleep(1)
+        return res
+
+    def complete_task(self, task_id):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/claim"
+        data = json.dumps({"task_id": task_id})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed complete_task!")
+            return False
+        result = res.json().get("data")
+        print(f'5 -  {res.json()}')
+        print(f'6 -  {result}')
+        time.sleep(1)
+        return res
 
     def play_game_func(self, amount_pass):
         data_game = json.dumps({"game_id": "59bcd12e-04e2-404c-a172-311a0084587d"})
@@ -153,7 +199,7 @@ class Tomartod:
 
             self.log(f"{hijau}success {biru}claim{hijau} game point : {putih}{point}")
 
-    def get_balance(self):
+    def get_balance(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
         while True:
             res = self.http(url, self.headers, "")
@@ -195,6 +241,31 @@ class Tomartod:
 
             self.log(f"{kuning}not time to claim !")
             self.log(f"{kuning}end farming at : {putih}{format_end_farming}")
+            tasks = self.get_tasks_list(token)
+            if not tasks:
+                print("No tasks found in the 'data' field.")
+                return
+            for category, task_list in tasks.items():
+                if isinstance(task_list, list):
+                    for task in task_list:
+                        task_id = task.get('taskId')
+                        task_name = task.get('name')
+                        print(f"Completing {task_name}?")
+                        try:
+                            completion_response = self.start_task(token, task_id)
+                            time.sleep(2)
+
+
+                            completion_response = self.check_task(token, task_id)
+                            time.sleep(2)
+
+                            completion_response = self.complete_task(task_id)
+                        except http.client.RemoteDisconnected as e:
+                            print(f"RemoteDisconnected error occurred: {e}. Moving to next account.")
+                            return  # Exit the current account's task processing
+            else:
+                print(f"All tasks done")
+
             if self.play_game:
                 self.log(f"{hijau}auto play game is enable !")
                 play_pass = data.get("play_passes")
@@ -287,15 +358,19 @@ class Tomartod:
         print(f"{hitam}[{now}]{reset} {msg}{reset}")
 
     def main(self):
-        banner = f"""
-      {hijau}Auto Claim {biru}Tomarket_ai
+        banner = r"""
+          _____   _    _    _____   _    _   __  __   ____    ______   _____  
+         / ____| | |  | |  / ____| | |  | | |  \/  | |  _ \  |  ____| |  __ \ 
+        | |      | |  | | | |      | |  | | | \  / | | |_) | | |__    | |__) |
+        | |      | |  | | | |      | |  | | | |\/| | |  _ <  |  __|   |  _  / 
+        | |____  | |__| | | |____  | |__| | | |  | | | |_) | | |____  | | \ \ 
+         \_____|  \____/   \_____|  \____/  |_|  |_| |____/  |______| |_|  \_\ """
+        print(Fore.GREEN + Style.BRIGHT + banner + Style.RESET_ALL)
+        print(biru + f" Goats Telegram Bot")
+        print(merah + f" FREE TO USE = Join us on {putih}t.me/cucumber_scripts")
+        print(merah + f" before start please '{hijau}git pull{hijau}' to update bot")
 
-      {hijau}By: {putih}t.me/AkasakaID
-      {hijau}GIthub: {putih}@AkasakaID
 
-      {hijau}Message: {putih}dont't forget to 'git pull' maybe the script is updated 
-
-          """
         arg = argparse.ArgumentParser()
         arg.add_argument("--data", default="data.txt")
         arg.add_argument("--config", default="config.json")
@@ -304,7 +379,6 @@ class Tomartod:
         args = arg.parse_args()
         if not args.marinkitagawa:
             os.system("cls" if os.name == "nt" else "clear")
-        print(banner)
         self.load_config(args.config)
         datas = self.load_data(args.data)
         proxies = open(args.proxy).read().splitlines()
@@ -342,7 +416,7 @@ class Tomartod:
                         continue
                     self.save(id, token)
                 self.set_authorization(token)
-                result = self.get_balance()
+                result = self.get_balance(data)
                 print(line)
                 self.countdown(self.interval)
                 list_countdown.append(result)
