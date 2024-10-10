@@ -230,9 +230,10 @@ class Tomartod:
         if res.json().get('data').get('isCreated') == False:
             return None
         rank = res.json().get('data').get('currentRank').get('name')
+        current_lvl = res.json().get('data').get('currentRank').get('level')
         unusedStars = res.json().get('data').get('unusedStars')
         usedStars = res.json().get('data').get('usedStars')
-        return rank, unusedStars, usedStars
+        return rank, current_lvl, unusedStars, usedStars
 
     def count_tickets(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/tickets"
@@ -255,6 +256,24 @@ class Tomartod:
         amount = res.json().get('data').get('results')[0].get('amount')
         amount_type = res.json().get('data').get('results')[0].get('type')
         return amount, amount_type
+
+    def max_level(self, unused_stars):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/upgrade"
+        data = json.dumps({"stars": unused_stars})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed update lvl")
+            return False
+        return res.json()
+
+    def sharetg(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/sharetg"
+        res = self.http(url, self.headers, "")
+        if res.status_code != 200:
+            self.log(f"{merah}failed share tg")
+            return False
+        if res.json().get('status') == 0:
+            return "ok"
 
     def get_balance(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
@@ -300,10 +319,11 @@ class Tomartod:
             self.log(f"{kuning}not time to claim !")
             self.log(f"{kuning}end farming at : {putih}{format_end_farming}")
 
+
             # total_rank = self.total_rank()
             # self.log(f"{hijau}total_rank: {putih}{total_rank}")
-            rank, unused_stars, used_stars = self.rank(data)
-            self.log(f"{hijau}current_rank: {putih}{rank}")
+            rank, current_lvl, unused_stars, used_stars = self.rank(data)
+            self.log(f"{hijau}current_rank: {putih}{rank}, {current_lvl} lvl")
             self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
             if self.unlock_levels and not rank:
                 evaluate_stars = self.evaluate_stars()
@@ -317,6 +337,19 @@ class Tomartod:
                         self.log(f"{hijau}Levels unlock, your current_rank - {putih}{current_rank}")
             else:
                 self.log(f"{hijau}Levels already unlock")
+
+            if self.upgrade_max_level:
+                result_up = self.max_level(unused_stars)
+                if result_up.get('status') == 500 :
+                    self.log(f"{merah}Failed ugrade lvl! - {putih}{result_up.get('message')}")
+                if result_up.get('status') == 0 and result_up.get('data').get('isUpgrade') == True:
+                    current_rank = result_up.get('data').get('currentRank').get('name')
+                    current_lvl = result_up.get('data').get('currentRank').get('level')
+                    self.log(f"{hijau}Lvl ugrade, your current_rank - {putih}{current_rank}, {current_lvl} lvl")
+                    time.sleep(1)
+                    share_tg = self.sharetg()
+                    if share_tg == "ok":
+                        self.log(f"{hijau}success share tg. Reward: {putih} 2000!")
 
             if self.use_free_spin:
                 tickets = int(self.count_tickets(data))
@@ -392,6 +425,7 @@ class Tomartod:
         self.complete_task = config["complete_task"]
         self.use_free_spin = config["use_free_spin"]
         self.unlock_levels = config["unlock_levels"]
+        self.upgrade_max_level = config["upgrade_max_level"]
         self.game_low_point = config["game_point"]["low"]
         self.game_high_point = config["game_point"]["high"]
         self.add_time_min = config["additional_time"]["min"]

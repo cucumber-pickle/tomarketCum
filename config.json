@@ -4,6 +4,7 @@
     "complete_task": false,
     "use_free_spin": true,
     "unlock_levels": true,
+    "upgrade_max_level": true,
     "game_point": {
         "low": 100,
         "high": 150
