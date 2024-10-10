@@ -211,19 +211,12 @@ class Tomartod:
         current_rank = res.json().get('data').get('currentRank').get('name')
         return current_rank
 
-    def total_rank(self):
-        url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/totalRank"
-        res = self.http(url, self.headers, "")
-        if res.status_code != 200:
-            self.log(f"{merah}failed get rank!")
-            return False
-        total_rank = res.json().get('data')
-        return total_rank
 
     def rank(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/data"
         data = json.dumps({"init_data": token, "language_code": "ru"})
         res = self.http(url, self.headers, data)
+
         if res.status_code != 200:
             self.log(f"{merah}failed get rank!")
             return False
@@ -233,7 +226,7 @@ class Tomartod:
         current_lvl = res.json().get('data').get('currentRank').get('level')
         unusedStars = res.json().get('data').get('unusedStars')
         usedStars = res.json().get('data').get('usedStars')
-        return rank, current_lvl, unusedStars, usedStars
+        return [rank, current_lvl, unusedStars, usedStars]
 
     def count_tickets(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/tickets"
@@ -320,12 +313,13 @@ class Tomartod:
             self.log(f"{kuning}end farming at : {putih}{format_end_farming}")
 
 
-            # total_rank = self.total_rank()
-            # self.log(f"{hijau}total_rank: {putih}{total_rank}")
-            rank, current_lvl, unused_stars, used_stars = self.rank(data)
-            self.log(f"{hijau}current_rank: {putih}{rank}, {current_lvl} lvl")
-            self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
-            if self.unlock_levels and not rank:
+            rank_info = self.rank(data)
+            if rank_info:
+                rank, current_lvl, unused_stars, used_stars = rank_info
+                self.log(f"{hijau}current_rank: {putih}{rank}, {current_lvl} lvl")
+                self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
+
+            if self.unlock_levels and not rank_info:
                 evaluate_stars = self.evaluate_stars()
                 if evaluate_stars.get('status') == 500:
                     self.log(f"{hijau}Levels already unlock")
@@ -338,7 +332,7 @@ class Tomartod:
             else:
                 self.log(f"{hijau}Levels already unlock")
 
-            if self.upgrade_max_level:
+            if self.upgrade_max_level and rank_info:
                 result_up = self.max_level(unused_stars)
                 if result_up.get('status') == 500 :
                     self.log(f"{merah}Failed ugrade lvl! - {putih}{result_up.get('message')}")
@@ -377,7 +371,7 @@ class Tomartod:
                             try:
                                 check = self.check_task(token, task_id).get('data').get('status')
                                 if check ==2 or check ==3:
-                                    self.log(putih + f'task already completed!')
+                                    self.log(hijau + f'task already completed!')
                                     continue
 
                                 self.log(biru + f'Task not done. Start {task_name}')
