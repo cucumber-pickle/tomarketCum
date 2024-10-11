@@ -134,11 +134,10 @@ class Tomartod:
         url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/list"
         data = json.dumps({"init_data": token, "language_code":"ru"})
         res = self.http(url, self.headers, data)
-        tasks = res.json().get("data")
-
         if res.status_code != 200:
             self.log(f"{merah}failed get_tasks_lis")
-            return False
+            return None
+        tasks = res.json().get("data")
         return tasks
 
     def start_task(self,token, task_id):
