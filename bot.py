@@ -359,8 +359,9 @@ class Tomartod:
                 if not tasks:
                     self.log("No tasks found in the 'data' field.")
                     return
-
                 for category, task_list in tasks.items():
+                    if category == '3rd':
+                        task_list = task_list.get("default")
                     if isinstance(task_list, list):
                         for task in task_list:
                             task_id = task.get('taskId')
@@ -370,7 +371,7 @@ class Tomartod:
                                 check = (self.check_task(token, task_id))
                                 if check:
                                     status = check.get('data').get('status')
-                                    if status == 2 or status == 3:
+                                    if status == 3:
                                         self.log(hijau + f'task already completed!')
                                         continue
 
