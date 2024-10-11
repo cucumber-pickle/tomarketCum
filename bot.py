@@ -267,7 +267,7 @@ class Tomartod:
         if res.json().get('status') == 0:
             return "ok"
 
-    def get_balance(self, token):
+    def get_balance(self, token, acc, user_name):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
         while True:
             res = self.http(url, self.headers, "")
@@ -282,6 +282,10 @@ class Tomartod:
             timestamp = data["timestamp"]
             balance = data["available_balance"]
             self.log(f"{hijau}balance : {putih}{balance}")
+
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            open("balance.txt", "a", encoding="utf-8").write(
+                    f"{now} / {acc} / balance: / {user_name} / {balance} \n")
 
             if "daily" not in data.keys():
                 self.daily_claim()
@@ -402,7 +406,7 @@ class Tomartod:
                     continue
 
             _next = end_farming - timestamp
-            return _next + random.randint(self.add_time_min, self.add_time_max)
+            return _next + random.randint(self.add_time_min, self.add_time_max), balance
 
     def load_data(self, file):
         datas = [i for i in open(file).read().splitlines() if len(i) > 0]
@@ -524,6 +528,7 @@ class Tomartod:
         while True:
             list_countdown = []
             _start = int(time.time())
+            total_balance = 0
             for no, data in enumerate(datas):
                 if use_proxy:
                     proxy = proxies[no % len(proxies)]
@@ -550,10 +555,18 @@ class Tomartod:
                         continue
                     self.save(id, token)
                 self.set_authorization(token)
-                result = self.get_balance(data)
+                result, balance = self.get_balance(data, account_number, user_name)
+                try:
+                    total_balance += int(balance)
+                except:
+                    total_balance += 0
                 print(line)
                 self.countdown(self.interval)
                 list_countdown.append(result)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            open("balance.txt", "a", encoding="utf-8").write(
+                f"{now} / total_balance: / {total_balance} \n")
+            self.log(f"total_balance:  {total_balance}")
             _end = int(time.time())
             _tot = _end - _start
             _min = min(list_countdown) - _tot

@@ -1,11 +1,11 @@
 {
     "interval": 1,
-    "play_game": true,
-    "complete_task": true,
-    "use_free_spin": false,
+    "play_game": false,
+    "complete_task": false,
+    "use_free_spin": true,
     "unlock_levels": true,
     "upgrade_max_level": true,
-    "share_tg_after_upgrade": true,
+    "share_tg_after_upgrade": false,
     "game_point": {
         "low": 100,
         "high": 150
