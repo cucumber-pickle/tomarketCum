@@ -156,7 +156,7 @@ class Tomartod:
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
             self.log(f"{merah}failed check_task!")
-            return False
+            return None
         return res.json()
 
     def claim_task(self, task_id):
@@ -165,7 +165,7 @@ class Tomartod:
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
             self.log(f"{merah}failed claim_task!")
-            return False
+            return None
         return res.json()
 
     def play_game_func(self, amount_pass):
@@ -368,22 +368,24 @@ class Tomartod:
                             task_name = task.get('name')
                             self.log(kuning + f"Completing {task_name}, id{task_id}?")
                             try:
-                                check = self.check_task(token, task_id).get('data').get('status')
-                                if check ==2 or check ==3:
-                                    self.log(hijau + f'task already completed!')
-                                    continue
+                                check = (self.check_task(token, task_id))
+                                if check:
+                                    status = check.get('data').get('status')
+                                    if status == 2 or status == 3:
+                                        self.log(hijau + f'task already completed!')
+                                        continue
 
-                                self.log(biru + f'Task not done. Start {task_name}')
-                                completion_response = self.start_task(token, task_id)
-                                time.sleep(1)
+                                    self.log(biru + f'Task not done. Start {task_name}')
+                                    completion_response = self.start_task(token, task_id)
+                                    time.sleep(1)
 
-                                self.log(kuning + f'try claim {task_name}')
-                                claim = self.claim_task(task_id)
-                                if claim.get('status') == 500:
-                                    self.log(merah + f"Can't claim task - {putih}{claim.get('message')}")
-                                if claim.get('status') == 0:
-                                    self.log(hijau + f'task done!')
-                                time.sleep(1)
+                                    self.log(kuning + f'try claim {task_name}')
+                                    claim = self.claim_task(task_id)
+                                    if claim and claim.get('status') == 500:
+                                        self.log(merah + f"Can't claim task - {putih}{claim.get('message')}")
+                                    if claim and claim.get('status') == 0:
+                                        self.log(hijau + f'task done!')
+                                    time.sleep(1)
 
                             except http.client.RemoteDisconnected as e:
                                 print(f"RemoteDisconnected error occurred: {e}. Moving to next account.")
