@@ -555,7 +555,10 @@ class Tomartod:
                         continue
                     self.save(id, token)
                 self.set_authorization(token)
-                result, balance = self.get_balance(data, account_number, user_name)
+                try:
+                    result, balance = self.get_balance(data, account_number, user_name)
+                except:
+                    continue
                 try:
                     total_balance += int(balance)
                 except:
