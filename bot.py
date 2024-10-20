@@ -41,7 +41,6 @@ class Tomartod:
             key: value[0] for key, value in parse_qs(data).items()
         }
 
-        self.code = (open("puzzle.txt").read())
 
 
     def set_proxy(self, proxy=None):
@@ -275,6 +274,7 @@ class Tomartod:
         answers = self.answer()
         if answers:
             answer = answers['tomarket']['answer']
+            self.log(f"{kuning}Trying claim puzzle, answer - {putih}{answer}")
             data = json.dumps({"code": answer,
                                "task_id": task_id})
             res = self.http(url, self.headers, data)
