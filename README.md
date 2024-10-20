@@ -18,6 +18,9 @@ All Risks are borne by the user!
 -  Auto upgrade max level
 -  Auto share tg after upgrade
 
+### 20.10.24 add:
+- Auto puzzle
+
 # Features
 
 - [x] Auto Claim
@@ -29,6 +32,7 @@ All Risks are borne by the user!
 - [x] Auto upgrade max level
 - [x] Auto share tg after upgrade
 - [x] Proxy Support
+- [x] Auto puzzle
 
 # Register
 
