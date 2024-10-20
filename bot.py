@@ -358,20 +358,6 @@ class Tomartod:
                 self.log(f"{hijau}current_rank: {putih}{rank}, {current_lvl} lvl")
                 self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
 
-            puzzle = self.get_puzzle_status(token)
-            puzzle_task = puzzle.get('data')[0].get('taskId')
-            puzzle_status = puzzle.get('data')[0].get('status')
-            if puzzle_status == 0:
-                msg = self.claim_puzzle(puzzle_task)
-                if msg and msg.get("data") == {} and msg.get("status") == 0:
-                    self.log(f"{hijau}Sucsess claim puzzle!")
-                elif msg and msg.get("data").get("message") == "Must complement relation task":
-                    self.log(f"{kuning}Not time to claim puzzle!")
-                elif msg and msg.get("data").get("message") == "The result is incorrect":
-                    self.log(f"{merah}Puzzle answer is incorrect!")
-                else:
-                    self.log(f"{merah}Failed claim puzzle!")
-
 
             if self.unlock_levels and not rank_info:
                 evaluate_stars = self.evaluate_stars()
@@ -447,6 +433,20 @@ class Tomartod:
                                 return  # Exit the current account's task processing
                 else:
                     self.log(hijau + f"All possible tasks  been completed")
+
+            puzzle = self.get_puzzle_status(token)
+            puzzle_task = puzzle.get('data')[0].get('taskId')
+            puzzle_status = puzzle.get('data')[0].get('status')
+            if puzzle_status == 0:
+                msg = self.claim_puzzle(puzzle_task)
+                if msg and msg.get("data") == {} and msg.get("status") == 0:
+                    self.log(f"{hijau}Sucsess claim puzzle!")
+                elif msg and msg.get("data").get("message") == "Must complement relation task":
+                    self.log(f"{kuning}Not time to claim puzzle! {merah}Complete the Tomarket Youtube quest first!")
+                elif msg and msg.get("data").get("message") == "The result is incorrect":
+                    self.log(f"{merah}Puzzle answer is incorrect!")
+                else:
+                    self.log(f"{merah}Failed claim puzzle!")
 
             if self.play_game:
                 self.log(f"{hijau}auto play game is enable!")
