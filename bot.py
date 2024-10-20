@@ -41,6 +41,9 @@ class Tomartod:
             key: value[0] for key, value in parse_qs(data).items()
         }
 
+        self.code = (open("puzzle.txt").read())
+
+
     def set_proxy(self, proxy=None):
         self.ses = requests.Session()
         if proxy is not None:
@@ -238,6 +241,16 @@ class Tomartod:
         tickets = res.json().get('data').get('ticket_spin_1')
         return tickets
 
+    def get_puzzle_status(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/puzzle"
+        data = json.dumps({"init_data": token, "language_code": "ru"})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed get tickets!")
+            return False
+        status = res.json().get('data')[0].get('status')
+        return status
+
     def raffle(self):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/spin/raffle"
         data = json.dumps({"category": "ticket_spin_1"})
@@ -256,6 +269,17 @@ class Tomartod:
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
             self.log(f"{merah}failed update lvl")
+            return False
+        return res.json()
+
+    def claim_puzzle(self, code):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/puzzleClaim"
+        task_id = 2006
+        data = json.dumps({"code": code,
+                           "task_id": task_id})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim puzzle")
             return False
         return res.json()
 
@@ -318,6 +342,16 @@ class Tomartod:
                 rank, current_lvl, unused_stars, used_stars = rank_info
                 self.log(f"{hijau}current_rank: {putih}{rank}, {current_lvl} lvl")
                 self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
+
+            puzzle_status = self.get_puzzle_status(token)
+
+            if puzzle_status == 0:
+                msg = self.claim_puzzle(self.code)
+                if msg and msg.get("data") == {}:
+                    self.log(f"{hijau}Sucsess claim puzzle!")
+                else:
+                    self.log(f"{merah}The puzzle is incorrect!")
+
 
             if self.unlock_levels and not rank_info:
                 evaluate_stars = self.evaluate_stars()
@@ -425,6 +459,7 @@ class Tomartod:
         self.game_high_point = config["game_point"]["high"]
         self.add_time_min = config["additional_time"]["min"]
         self.add_time_max = config["additional_time"]["max"]
+
 
     def save(self, id, token):
         tokens = json.loads(open("tokens.json").read())
