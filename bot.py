@@ -137,11 +137,10 @@ class Tomartod:
         url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/list"
         data = json.dumps({"init_data": token, "language_code":"ru"})
         res = self.http(url, self.headers, data)
-        tasks = res.json().get("data")
-
         if res.status_code != 200:
             self.log(f"{merah}failed get_tasks_lis")
-            return False
+            return None
+        tasks = res.json().get("data")
         return tasks
 
     def start_task(self,token, task_id):
@@ -159,7 +158,7 @@ class Tomartod:
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
             self.log(f"{merah}failed check_task!")
-            return False
+            return None
         return res.json()
 
     def claim_task(self, task_id):
@@ -168,7 +167,7 @@ class Tomartod:
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
             self.log(f"{merah}failed claim_task!")
-            return False
+            return None
         return res.json()
 
     def play_game_func(self, amount_pass):
@@ -292,7 +291,7 @@ class Tomartod:
         if res.json().get('status') == 0:
             return "ok"
 
-    def get_balance(self, token):
+    def get_balance(self, token, acc, user_name):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
         while True:
             res = self.http(url, self.headers, "")
@@ -307,6 +306,10 @@ class Tomartod:
             timestamp = data["timestamp"]
             balance = data["available_balance"]
             self.log(f"{hijau}balance : {putih}{balance}")
+
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            open("balance.txt", "a", encoding="utf-8").write(
+                    f"{now} / {acc} / balance: / {user_name} / {balance} \n")
 
             if "daily" not in data.keys():
                 self.daily_claim()
@@ -394,30 +397,33 @@ class Tomartod:
                 if not tasks:
                     self.log("No tasks found in the 'data' field.")
                     return
-
                 for category, task_list in tasks.items():
+                    if category == '3rd':
+                        task_list = task_list.get("default")
                     if isinstance(task_list, list):
                         for task in task_list:
                             task_id = task.get('taskId')
                             task_name = task.get('name')
                             self.log(kuning + f"Completing {task_name}, id{task_id}?")
                             try:
-                                check = self.check_task(token, task_id).get('data').get('status')
-                                if check ==2 or check ==3:
-                                    self.log(hijau + f'task already completed!')
-                                    continue
+                                check = (self.check_task(token, task_id))
+                                if check:
+                                    status = check.get('data').get('status')
+                                    if status == 3:
+                                        self.log(hijau + f'task already completed!')
+                                        continue
 
-                                self.log(biru + f'Task not done. Start {task_name}')
-                                completion_response = self.start_task(token, task_id)
-                                time.sleep(1)
+                                    self.log(biru + f'Task not done. Start {task_name}')
+                                    completion_response = self.start_task(token, task_id)
+                                    time.sleep(1)
 
-                                self.log(kuning + f'try claim {task_name}')
-                                claim = self.claim_task(task_id)
-                                if claim.get('status') == 500:
-                                    self.log(merah + f"Can't claim task - {putih}{claim.get('message')}")
-                                if claim.get('status') == 0:
-                                    self.log(hijau + f'task done!')
-                                time.sleep(1)
+                                    self.log(kuning + f'try claim {task_name}')
+                                    claim = self.claim_task(task_id)
+                                    if claim and claim.get('status') == 500:
+                                        self.log(merah + f"Can't claim task - {putih}{claim.get('message')}")
+                                    if claim and claim.get('status') == 0:
+                                        self.log(hijau + f'task done!')
+                                    time.sleep(1)
 
                             except http.client.RemoteDisconnected as e:
                                 print(f"RemoteDisconnected error occurred: {e}. Moving to next account.")
@@ -426,7 +432,7 @@ class Tomartod:
                     self.log(hijau + f"All possible tasks  been completed")
 
             if self.play_game:
-                self.log(f"{hijau}auto play game is enable !")
+                self.log(f"{hijau}auto play game is enable!")
                 play_pass = data.get("play_passes")
                 self.log(f"{hijau}game ticket : {putih}{play_pass}")
                 if int(play_pass) > 0:
@@ -434,7 +440,7 @@ class Tomartod:
                     continue
 
             _next = end_farming - timestamp
-            return _next + random.randint(self.add_time_min, self.add_time_max)
+            return _next + random.randint(self.add_time_min, self.add_time_max), balance
 
     def load_data(self, file):
         datas = [i for i in open(file).read().splitlines() if len(i) > 0]
@@ -557,6 +563,7 @@ class Tomartod:
         while True:
             list_countdown = []
             _start = int(time.time())
+            total_balance = 0
             for no, data in enumerate(datas):
                 if use_proxy:
                     proxy = proxies[no % len(proxies)]
@@ -583,10 +590,21 @@ class Tomartod:
                         continue
                     self.save(id, token)
                 self.set_authorization(token)
-                result = self.get_balance(data)
+                try:
+                    result, balance = self.get_balance(data, account_number, user_name)
+                except:
+                    continue
+                try:
+                    total_balance += int(balance)
+                except:
+                    total_balance += 0
                 print(line)
                 self.countdown(self.interval)
                 list_countdown.append(result)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            open("balance.txt", "a", encoding="utf-8").write(
+                f"{now} / total_balance: / {total_balance} \n")
+            self.log(f"total_balance:  {total_balance}")
             _end = int(time.time())
             _tot = _end - _start
             _min = min(list_countdown) - _tot
