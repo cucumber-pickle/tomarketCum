@@ -247,8 +247,7 @@ class Tomartod:
         if res.status_code != 200:
             self.log(f"{merah}failed get tickets!")
             return False
-        status = res.json().get('data')[0].get('status')
-        return status
+        return res.json()
 
     def raffle(self):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/spin/raffle"
@@ -271,16 +270,20 @@ class Tomartod:
             return False
         return res.json()
 
-    def claim_puzzle(self, code):
+    def claim_puzzle(self, task_id):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/puzzleClaim"
-        task_id = 2006
-        data = json.dumps({"code": code,
-                           "task_id": task_id})
-        res = self.http(url, self.headers, data)
-        if res.status_code != 200:
-            self.log(f"{merah}failed claim puzzle")
-            return False
-        return res.json()
+        answers = self.answer()
+        if answers:
+            answer = answers['tomarket']['answer']
+            data = json.dumps({"code": answer,
+                               "task_id": task_id})
+            res = self.http(url, self.headers, data)
+            if res.status_code != 200:
+                self.log(f"{merah}failed claim puzzle")
+                return None
+            return res.json()
+        self.log(f"{merah}failed get answers")
+        return None
 
     def sharetg(self):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/sharetg"
@@ -290,6 +293,15 @@ class Tomartod:
             return False
         if res.json().get('status') == 0:
             return "ok"
+
+    def answer(self):
+        url = 'https://raw.githubusercontent.com/Shyzg/answer/refs/heads/main/answer.json'
+        try:
+            res = requests.get(url=url)
+            return res.json()
+        except:
+            return None
+
 
     def get_balance(self, token, acc, user_name):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
@@ -346,14 +358,19 @@ class Tomartod:
                 self.log(f"{hijau}current_rank: {putih}{rank}, {current_lvl} lvl")
                 self.log(f"{hijau}unused_stars: {putih}{unused_stars}, {hijau}used_stars: {putih}{used_stars}")
 
-            puzzle_status = self.get_puzzle_status(token)
-
+            puzzle = self.get_puzzle_status(token)
+            puzzle_task = puzzle.get('data')[0].get('taskId')
+            puzzle_status = puzzle.get('data')[0].get('status')
             if puzzle_status == 0:
-                msg = self.claim_puzzle(self.code)
-                if msg and msg.get("data") == {}:
+                msg = self.claim_puzzle(puzzle_task)
+                if msg and msg.get("data") == {} and msg.get("status") == 0:
                     self.log(f"{hijau}Sucsess claim puzzle!")
+                elif msg and msg.get("data").get("message") == "Must complement relation task":
+                    self.log(f"{kuning}Not time to claim puzzle!")
+                elif msg and msg.get("data").get("message") == "The result is incorrect":
+                    self.log(f"{merah}Puzzle answer is incorrect!")
                 else:
-                    self.log(f"{merah}The puzzle is incorrect!")
+                    self.log(f"{merah}Failed claim puzzle!")
 
 
             if self.unlock_levels and not rank_info:
@@ -507,6 +524,7 @@ class Tomartod:
             except requests.exceptions.ProxyError:
                 print(f"{merah}bad proxy !")
                 time.sleep(1)
+                continue
         
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 print(f"{merah}connection error / connection timeout !")
