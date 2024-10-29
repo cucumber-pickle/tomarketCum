@@ -1,5 +1,3 @@
-2024-10-12 01:30 / 1 / balance: / Fujg / 447004
-2024-10-12 01:30 / 2 / balance: / Vhh🐈‍⬛ / 392934.00 
-2024-10-12 01:32 / 7 / balance: / Ogrjamesnel / 346201 
-2024-10-12 01:33 / 8 / balance: / Mikkipietersk / 345110 
-2024-10-12 01:33 / total_balance: / 2523602 
+Time / num_acc / Name / Balance / rank / Result_connect_wallet / Avatar_task / Wallet
+2024-10-29 19:14 / 1 / Елена / 1094171 / Silver II / Successfully connected wallet! / Done / UQAt8ePz1DA_E_ksEC5rng6fhNkchzW5N1PSu_GO7cFOihhO
+2024-10-29 19:14 / total_balance: / 1094171 

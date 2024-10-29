@@ -269,6 +269,23 @@ class Tomartod:
             return False
         return res.json()
 
+    def connection_wallet(self, wallet):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/address"
+        data = json.dumps({"wallet_address": wallet})
+        res = self.http(url, self.headers, data)
+        if res and res.status_code != 200:
+            self.log(f"{merah}failed connect_wallet")
+            return "Failed to connect wallet!"
+        if res.json().get('status') == 0:
+            self.log(f"Successfully connected wallet!")
+            return "Successfully connected wallet!"
+        elif res.json().get('status') == 500:
+            self.log(f"Failed! - {res.json().get('message')}")
+            return f"Failed! - {res.json().get('message')}"
+        else:
+            self.log(f"{merah}failed connect_wallet")
+            return "Failed to connect wallet!"
+
     def claim_puzzle(self, task_id):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/puzzleClaim"
         answers = self.answer()
@@ -303,7 +320,7 @@ class Tomartod:
             return None
 
 
-    def get_balance(self, token, acc, user_name):
+    def get_balance(self, token, acc, user_name, wallet):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/user/balance"
         while True:
             res = self.http(url, self.headers, "")
@@ -318,10 +335,6 @@ class Tomartod:
             timestamp = data["timestamp"]
             balance = data["available_balance"]
             self.log(f"{hijau}balance : {putih}{balance}")
-
-            now = datetime.now().strftime("%Y-%m-%d %H:%M")
-            open("balance.txt", "a", encoding="utf-8").write(
-                    f"{now} / {acc} / balance: / {user_name} / {balance} \n")
 
             if "daily" not in data.keys():
                 self.daily_claim()
@@ -351,6 +364,10 @@ class Tomartod:
             self.log(f"{kuning}not time to claim !")
             self.log(f"{kuning}end farming at : {putih}{format_end_farming}")
 
+            if self.connect_wallet:
+                result_connect = self.connection_wallet(wallet)
+            else:
+                result_connect = None
 
             rank_info = self.rank(data)
             if rank_info:
@@ -412,6 +429,8 @@ class Tomartod:
                                 check = (self.check_task(token, task_id))
                                 if check:
                                     status = check.get('data').get('status')
+                                    if task_name == "TGE Step 1:":
+                                        tom_ava = "Done"
                                     if status == 3:
                                         self.log(hijau + f'task already completed!')
                                         continue
@@ -456,8 +475,13 @@ class Tomartod:
                     self.play_game_func(play_pass)
                     continue
 
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            open("balance.txt", "a", encoding="utf-8").write(
+                f"{now} / {acc} / {user_name} / {balance} / {rank} / {result_connect} / {tom_ava} / {wallet}\n")
+
             _next = end_farming - timestamp
             return _next + random.randint(self.add_time_min, self.add_time_max), balance
+
 
     def load_data(self, file):
         datas = [i for i in open(file).read().splitlines() if len(i) > 0]
@@ -478,6 +502,7 @@ class Tomartod:
         self.unlock_levels = config["unlock_levels"]
         self.share_tg_after_upgrade = config["share_tg_after_upgrade"]
         self.upgrade_max_level = config["upgrade_max_level"]
+        self.connect_wallet = config["connect_wallet"]
         self.game_low_point = config["game_point"]["low"]
         self.game_high_point = config["game_point"]["high"]
         self.add_time_min = config["additional_time"]["min"]
@@ -573,6 +598,7 @@ class Tomartod:
         self.load_config(args.config)
         datas = self.load_data(args.data)
         proxies = open(args.proxy).read().splitlines()
+        wallets = open(r'wallet.txt').read().splitlines()
         self.log(f"{biru}total account : {putih}{len(datas)}")
         self.log(f"{biru}total proxies detected : {putih}{len(proxies)}")
         use_proxy = True if len(proxies) > 0 else False
@@ -585,6 +611,15 @@ class Tomartod:
             for no, data in enumerate(datas):
                 if use_proxy:
                     proxy = proxies[no % len(proxies)]
+                if self.connect_wallet:
+                    if len(wallets) != len(datas):
+                        self.log(merah + 'the number of wallets should be equal to the number of accounts! connect_wallet = False!')
+                        self.connect_wallet = False
+                        wallet = None
+                    else:
+                        wallet = wallets[no % len(wallets)]
+                else:
+                    wallet = None
                 self.set_proxy(proxy if use_proxy else None)
                 parser = self.marinkitagawa(data)
                 user = json.loads(parser["user"])
@@ -609,7 +644,7 @@ class Tomartod:
                     self.save(id, token)
                 self.set_authorization(token)
                 try:
-                    result, balance = self.get_balance(data, account_number, user_name)
+                    result, balance = self.get_balance(data, account_number, user_name, wallet)
                 except:
                     continue
                 try:
