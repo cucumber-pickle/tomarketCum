@@ -1,7 +1,9 @@
 {
     "interval": 1,
     "play_game": false,
-    "complete_task": true,
+    "change_tomato_to_star": false,
+    "claim_weekly_airdrop": false,
+    "complete_task": false,
     "use_free_spin": true,
     "unlock_levels": false,
     "upgrade_max_level": false,
@@ -14,6 +16,6 @@
 
     "additional_time": {
         "min": 60,
-        "max": 120
+        "max": 90
     }
 }

@@ -42,17 +42,18 @@ Click the following url to register : https://t.me/Tomarket_ai_bot/app?startapp=
 
 ## About Config
 
-| Name                   | Description                                                                  |
-|------------------------|------------------------------------------------------------------------------|
-| interval               | downtime between account                                                     |
-| play_game              | value must bool (true/false) set true for enable auto play game after claim  |
-| complete_task          | value must bool (true/false) set true for enable auto complete_task          |
-| use_free_spin          | value must bool (true/false) set true for enable auto use_free_spin          |
-| unlock_levels          | value must bool (true/false) set true for enable auto unlock_levels          |
-| upgrade_max_level      | value must bool (true/false) set true for enable auto upgrade_max_level      |
+| Name                  | Description                                                                  |
+|-----------------------|------------------------------------------------------------------------------|
+| interval              | downtime between account                                                     |
+| play_game             | value must bool (true/false) set true for enable auto play game after claim  |
+| complete_task         | value must bool (true/false) set true for enable auto complete_task          |
+| use_free_spin         | value must bool (true/false) set true for enable auto use_free_spin          |
+| change_tomato_to_star | (true/false)                                                                 |
+| claim_weekly_airdrop  | (true/false)                                                                 |
+| unlock_levels         | value must bool (true/false) set true for enable auto unlock_levels          |
+| upgrade_max_level     | value must bool (true/false) set true for enable auto upgrade_max_level      |
 | share_tg_after_upgrade | value must bool (true/false) set true for enable auto share_tg_after_upgrade |
-| additional_time        | value must bool (true/false) set true for enable auto use_free_spin          |
-| game_point             | low : minimum earn from play game <br>high : maximum earn from play game     |
+| game_point            | low : minimum earn from play game <br>high : maximum earn from play game     |
 
 
 
