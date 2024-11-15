@@ -10,6 +10,8 @@ from datetime import datetime
 from urllib.parse import parse_qs
 from colorama import init, Fore, Style
 import http
+from platform import system as s_name
+from os import system as sys
 
 merah = Fore.LIGHTRED_EX
 kuning = Fore.LIGHTYELLOW_EX
@@ -286,21 +288,147 @@ class Tomartod:
             self.log(f"{merah}failed connect_wallet")
             return "Failed to connect wallet!"
 
+    def response_data(self, response):
+        if response.status_code >= 500:
+            print_timestamp(f"Error {response.status_code}")
+            return None
+        elif response.status_code >= 400:
+            print_timestamp(f"Error {response.status_code} : msg {response.text}")
+            return None
+        elif response.status_code >= 200:
+            return response.json()
+        else:
+            return None
+
+    def get_combo_puzzle(self):
+        url = 'https://raw.githubusercontent.com/boytegar/TomarketBOT/refs/heads/master/combo.json'
+        response = requests.get(url)
+        data = self.response_data(response)
+        return data
+
+    def find_by_id(self, json_data, id):
+        for key, value in json_data.items():
+            if key == id:
+                return value
+        return None
+
     def claim_puzzle(self, task_id):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/tasks/puzzleClaim"
-        answers = self.answer()
-        if answers:
-            answer = answers['tomarket']['answer']
-            self.log(f"{kuning}Trying claim puzzle, answer - {putih}{answer}")
-            data = json.dumps({"code": answer,
-                               "task_id": task_id})
-            res = self.http(url, self.headers, data)
-            if res.status_code != 200:
-                self.log(f"{merah}failed claim puzzle")
-                return None
-            return res.json()
-        self.log(f"{merah}failed get answers")
-        return None
+        list_combo = self.get_combo_puzzle()
+        combo = self.find_by_id(list_combo, str(task_id))
+        answer = combo
+        self.log(f"{kuning}Trying claim puzzle, answer - {putih}{answer}")
+        data = json.dumps({"code": answer,
+                           "task_id": task_id})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim puzzle")
+            return None
+        return res.json()
+
+    def check_airdrop(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/token/check"
+        data = json.dumps({"init_data": token, "language_code": "ru", "round": "One"})
+        res = self.http(url, self.headers, data)
+        # print(res.status_code)
+        # print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed check_airdrop")
+            return None, None
+        try:
+            amount = res.json().get('data').get('tomaAirDrop').get("amount")
+            wallet = res.json().get('data').get('walletAddress')
+            return amount, wallet
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed check_airdrop")
+            return None, None
+
+    def claim_airdrop(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/token/claim"
+        data = json.dumps({"round": "One"})
+        res = self.http(url, self.headers, data)
+        print(res.status_code)
+        print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim_airdrop")
+            return None
+        try:
+            amount = res.json().get('data').get("amount")
+            return amount
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed claim_airdrop")
+            return None
+
+    def claim_launchpad_task(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/launchpad/taskClaim"
+        data = json.dumps({"launchpad_id": 3, "task_id": 10074})
+        print(data)
+        res = self.http(url, self.headers, data)
+        print(res.status_code)
+        print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim_launchpad_task")
+        try:
+            result = res.json()
+            print(result)
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed claim_launchpad_task")
+
+    def invest_Toma(self, amount):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/launchpad/investToma"
+        data = json.dumps({"launchpad_id": 3, "amount": amount})
+        print(data)
+        res = self.http(url, self.headers, data)
+        print(res.status_code)
+        print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed invest_Toma")
+        try:
+            result = res.json().get('data').get("success")
+            print(result)
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed invest_Toma")
+
+    def claim_duck(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/launchpad/claimFormInfo"
+        data = json.dumps({"launchpad_id": 2})
+        print(data)
+        res = self.http(url, self.headers, data)
+        print(res.status_code)
+        print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim_duck")
+        try:
+            result = res.json().get('data')
+            print(result)
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed claim_duck")
+
+    def claim_pgc(self, address, market_uid):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/launchpad/claimForm"
+        data = json.dumps({"launchpad_id": 3,
+                           "address": address,
+                           "market":"bitget",
+                           "market_uid":market_uid,
+                           "memo":""})
+
+        print(data)
+        res = self.http(url, self.headers, data)
+        print(res.status_code)
+        print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim pgc")
+        try:
+            result = res.json().get('data').get("success")
+            print(result)
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed claim pgc")
 
     def sharetg(self):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/rank/sharetg"
@@ -422,8 +550,11 @@ class Tomartod:
                         task_list = task_list.get("default")
                     if isinstance(task_list, list):
                         for task in task_list:
+                            # need_tasks = [2055, 311, 53, 310, 3048]
                             task_id = task.get('taskId')
                             task_name = task.get('name')
+                            # if task_id not in need_tasks:
+                            #     continue
                             self.log(kuning + f"Completing {task_name}, id{task_id}?")
                             try:
                                 check = (self.check_task(token, task_id))
@@ -475,12 +606,32 @@ class Tomartod:
                     self.play_game_func(play_pass)
                     continue
 
+            amount, wallet = self.check_airdrop(token)
+            float_number = float(amount) - 0.01
+            formatted_float = "{:.2f}".format(float_number)
+            self.log(f'{hijau}Your amount - {putih}{formatted_float}')
+
+            # self.claim_duck()
+            # launchpad_tasks = [4, 5, 6]
+            #
+            # for task in launchpad_tasks:
+            # self.claim_launchpad_task()
+            # time.sleep(1)
+            #
+            # self.invest_Toma(formatted_float)
+            #
+            # # amount = self.claim_airdrop()
+            # time.sleep(1)
+            # self.claim_pgc(adress, uid)
+
+
+
             now = datetime.now().strftime("%Y-%m-%d %H:%M")
             open("balance.txt", "a", encoding="utf-8").write(
-                f"{now} / {acc} / {user_name} / {balance} / {rank} / {result_connect} / {tom_ava} / {wallet}\n")
+                f"{now}/{acc}/{rank}/{amount}/{user_name} \n")
 
-            _next = end_farming - timestamp
-            return _next + random.randint(self.add_time_min, self.add_time_max), balance
+            # _next = end_farming - timestamp
+            return balance
 
 
     def load_data(self, file):
@@ -599,14 +750,16 @@ class Tomartod:
         datas = self.load_data(args.data)
         proxies = open(args.proxy).read().splitlines()
         wallets = open(r'wallet.txt').read().splitlines()
+        # bg_wal = open(r'bg_wal.txt').read().splitlines()
+        # bg_uid = open(r'bg_uid.txt').read().splitlines()
         self.log(f"{biru}total account : {putih}{len(datas)}")
         self.log(f"{biru}total proxies detected : {putih}{len(proxies)}")
         use_proxy = True if len(proxies) > 0 else False
         self.log(f"{hijau}use proxy : {putih}{use_proxy}")
         print(line)
         while True:
-            list_countdown = []
-            _start = int(time.time())
+            # list_countdown = []
+            # _start = int(time.time())
             total_balance = 0
             for no, data in enumerate(datas):
                 if use_proxy:
@@ -620,16 +773,18 @@ class Tomartod:
                         wallet = wallets[no % len(wallets)]
                 else:
                     wallet = None
+                # adress = bg_wal[no % len(bg_wal)]
+                # uid = bg_uid[no % len(bg_uid)]
                 self.set_proxy(proxy if use_proxy else None)
                 parser = self.marinkitagawa(data)
                 user = json.loads(parser["user"])
                 id = user["id"]
                 account_number = no + 1
-                user_name = user['first_name']
+                user_name = user['username']
                 self.log(
                     f"{hijau}account number : {putih}{no + 1}{hijau}/{putih}{len(datas)}"
                 )
-                self.log(f"{hijau}name : {putih}{user['first_name']}")
+                self.log(f"{hijau}name : {putih}{user['username']}")
                 token = self.get(id)
                 if token is None:
                     token = self.login(data, account_number, user_name)
@@ -644,7 +799,7 @@ class Tomartod:
                     self.save(id, token)
                 self.set_authorization(token)
                 try:
-                    result, balance = self.get_balance(data, account_number, user_name, wallet)
+                    balance = self.get_balance(data, account_number, user_name, wallet)
                 except:
                     continue
                 try:
@@ -653,19 +808,24 @@ class Tomartod:
                     total_balance += 0
                 print(line)
                 self.countdown(self.interval)
-                list_countdown.append(result)
+                # list_countdown.append(result)
             now = datetime.now().strftime("%Y-%m-%d %H:%M")
             open("balance.txt", "a", encoding="utf-8").write(
                 f"{now} / total_balance: / {total_balance} \n")
             self.log(f"total_balance:  {total_balance}")
-            _end = int(time.time())
-            _tot = _end - _start
-            _min = min(list_countdown) - _tot
-            self.countdown(_min)
+            # _end = int(time.time())
+            # _tot = _end - _start
+            # _min = min(list_countdown) - _tot
+            wait = random.randint(1800, 3600)
+            self.countdown(wait)
 
 
 if __name__ == "__main__":
     try:
+        if s_name() == 'Windows':
+            sys(f'cls && title Tomarket')
+        else:
+            sys('clear')
         app = Tomartod()
         app.main()
     except KeyboardInterrupt:
