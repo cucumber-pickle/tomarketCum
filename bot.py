@@ -344,6 +344,42 @@ class Tomartod:
             self.log(f"{merah}failed check_airdrop")
             return None, None
 
+    def check_balance_now(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/token/balance"
+        data = json.dumps({"init_data": token, "language_code": "ru"})
+        res = self.http(url, self.headers, data)
+        # print(res.status_code)
+        # print(res.text)
+        if res.status_code != 200:
+            self.log(f"{merah}failed check_balance_now")
+            return None
+        try:
+            amount = res.json().get('data').get('total')
+            return amount
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed check_balance_now")
+            return None
+
+    def claim_weekly(self, token):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/token/claim"
+        data = json.dumps({"round": "Three"})
+        res = self.http(url, self.headers, data)
+        if res.status_code != 200:
+            self.log(f"{merah}failed claim weekly airdrop")
+            return None
+        try:
+            status = res.json().get('status')
+            if status == 500:
+                self.log(f"{merah}Weekly airdrop has already been claimed")
+                return None
+            amount = res.json().get('data').get('amount')
+            return amount
+        except Exception as e:
+            self.log(e)
+            self.log(f"{merah}failed claim weekly airdrop")
+            return None
+
     def claim_airdrop(self):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/token/claim"
         data = json.dumps({"round": "One"})
@@ -435,6 +471,15 @@ class Tomartod:
         res = self.http(url, self.headers, "")
         if res.status_code != 200:
             self.log(f"{merah}failed share tg")
+            return False
+        if res.json().get('status') == 0:
+            return "ok"
+
+    def tomato_to_star(self):
+        url = "https://api-web.tomarket.ai/tomarket-game/v1/token/tomatoToStar"
+        res = self.http(url, self.headers, "")
+        if res.status_code != 200:
+            self.log(f"{merah}failed change tomato_to_star")
             return False
         if res.json().get('status') == 0:
             return "ok"
@@ -587,6 +632,16 @@ class Tomartod:
                 else:
                     self.log(hijau + f"All possible tasks  been completed")
 
+            if self.change_tomato_to_star:
+                msg = self.tomato_to_star()
+                if msg == "ok":
+                    self.log(f"{hijau}success change_tomato_to_star!")
+
+            if self.claim_weekly_airdrop:
+                toma = self.claim_weekly(token)
+                if toma:
+                    self.log(f"{hijau}success claim: {putih}{toma}")
+
             puzzle = self.get_puzzle_status(token)
             puzzle_task = puzzle.get('data')[0].get('taskId')
             puzzle_status = puzzle.get('data')[0].get('status')
@@ -610,9 +665,16 @@ class Tomartod:
                     continue
 
             amount, wallet = self.check_airdrop(token)
-            float_number = float(amount) - 0.01
-            formatted_float = "{:.2f}".format(float_number)
-            self.log(f'{hijau}Your amount - {putih}{formatted_float}')
+            if amount:
+                float_number = float(amount) - 0.01
+                formatted_float = "{:.2f}".format(float_number)
+                self.log(f'{hijau}Your amount Round One- {putih}{formatted_float}')
+
+            amount_now = self.check_balance_now(token)
+            if amount_now:
+                float_number = float(amount_now) - 0.01
+                formatted_float = "{:.2f}".format(float_number)
+                self.log(f'{hijau}Your amount now- {putih}{formatted_float}')
 
             # self.claim_duck()
             # launchpad_tasks = [4, 5, 6]
@@ -652,6 +714,8 @@ class Tomartod:
         self.interval = config["interval"]
         self.play_game = config["play_game"]
         self.complete_task = config["complete_task"]
+        self.change_tomato_to_star = config["change_tomato_to_star"]
+        self.claim_weekly_airdrop = config["claim_weekly_airdrop"]
         self.use_free_spin = config["use_free_spin"]
         self.unlock_levels = config["unlock_levels"]
         self.share_tg_after_upgrade = config["share_tg_after_upgrade"]
