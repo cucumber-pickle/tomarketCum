@@ -551,10 +551,13 @@ class Tomartod:
                     if isinstance(task_list, list):
                         for task in task_list:
                             # need_tasks = [2055, 311, 53, 310, 3048]
+                            skip_tasks = [308, 309, 4031, 267]
                             task_id = task.get('taskId')
                             task_name = task.get('name')
                             # if task_id not in need_tasks:
                             #     continue
+                            if task_id in skip_tasks:
+                               continue
                             self.log(kuning + f"Completing {task_name}, id{task_id}?")
                             try:
                                 check = (self.check_task(token, task_id))
