@@ -363,7 +363,7 @@ class Tomartod:
 
     def claim_weekly(self, token):
         url = "https://api-web.tomarket.ai/tomarket-game/v1/token/claim"
-        data = json.dumps({"round": "Three"})
+        data = json.dumps({"round": "Four"})
         res = self.http(url, self.headers, data)
         if res.status_code != 200:
             self.log(f"{merah}failed claim weekly airdrop")
@@ -499,7 +499,7 @@ class Tomartod:
             res = self.http(url, self.headers, "")
             if res.status_code != 200:
                 self.log(f"{merah}failed fetch balance !")
-                continue
+                break
             data = res.json().get("data")
             if data is None:
                 self.log(f"{merah}failed get data !")
